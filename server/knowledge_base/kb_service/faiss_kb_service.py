@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from configs import SCORE_THRESHOLD
+from configs import SCORE_THRESHOLD, EMBEDDING_MODEL
 from server.knowledge_base.kb_service.base import KBService, SupportedVSType, EmbeddingsFunAdapter
 from server.knowledge_base.kb_cache.faiss_cache import kb_faiss_pool, ThreadSafeFaiss
 from server.knowledge_base.utils import KnowledgeFile, get_kb_path, get_vs_path
@@ -14,6 +14,15 @@ class FaissKBService(KBService):
     vs_path: str
     kb_path: str
     vector_name: str = None
+    index_method: str = None
+
+    def __init__(self,
+                    knowledge_base_name: str,
+                    embed_model: str = EMBEDDING_MODEL,
+                    index_method: str = None,
+                    ):
+        super().__init__(knowledge_base_name, embed_model)
+        self.index_method = index_method
  
     def vs_type(self) -> str:
         return SupportedVSType.FAISS
@@ -27,7 +36,8 @@ class FaissKBService(KBService):
     def load_vector_store(self) -> ThreadSafeFaiss:
         return kb_faiss_pool.load_vector_store(kb_name=self.kb_name,
                                                vector_name=self.vector_name,
-                                               embed_model=self.embed_model)
+                                               embed_model=self.embed_model,
+                                               index = self.index_method)
 
     def save_vector_store(self):
         self.load_vector_store().save(self.vs_path)

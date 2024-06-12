@@ -18,13 +18,16 @@ class KBSummaryService(ABC):
     embed_model: str
     vs_path: str
     kb_path: str
+    index_method: str
 
     def __init__(self,
                  knowledge_base_name: str,
-                 embed_model: str = EMBEDDING_MODEL
+                 embed_model: str = EMBEDDING_MODEL,
+                 index_method: str = None,
                  ):
         self.kb_name = knowledge_base_name
         self.embed_model = embed_model
+        self.index_methid = index_method
 
         self.kb_path = self.get_kb_path()
         self.vs_path = self.get_vs_path()
@@ -43,6 +46,7 @@ class KBSummaryService(ABC):
         return kb_faiss_pool.load_vector_store(kb_name=self.kb_name,
                                                vector_name="summary_vector_store",
                                                embed_model=self.embed_model,
+                                               index_method = self.index_method,
                                                create=True)
 
     def add_kb_summary(self, summary_combine_docs: List[Document]):

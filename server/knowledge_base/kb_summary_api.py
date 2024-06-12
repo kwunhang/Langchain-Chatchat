@@ -1,7 +1,7 @@
 from fastapi import Body
 from configs import (DEFAULT_VS_TYPE, EMBEDDING_MODEL,
                      OVERLAP_SIZE,
-                     logger, log_verbose, )
+                     logger, log_verbose, kbs_config)
 from server.knowledge_base.utils import (list_files_from_folder)
 from sse_starlette import EventSourceResponse
 import json
@@ -43,7 +43,7 @@ def recreate_summary_vector_store(
             yield {"code": 404, "msg": f"未找到知识库 ‘{knowledge_base_name}’"}
         else:
             # 重新创建知识库
-            kb_summary = KBSummaryService(knowledge_base_name, embed_model)
+            kb_summary = KBSummaryService(knowledge_base_name, embed_model, kbs_config[vs_type])
             kb_summary.drop_kb_summary()
             kb_summary.create_kb_summary()
 

@@ -21,6 +21,12 @@ def _new_ds_search(self, search: str) -> Union[str, Document]:
         return doc
 InMemoryDocstore.search = _new_ds_search
 
+class SupportedIndexing:
+    INDEXHNSWFLAT = 'IndexHNSWFlat'
+    INDEXIVFPQ = 'IndexIVFPQ'
+    # INDEXIVFSCALARQUANTIZER = 'IndexIVFScalarQuantizer'
+    # INDEXIVFPQ = 'IndexIVFPQ'
+    
 
 class ThreadSafeFaiss(ThreadSafeObject):
     def __repr__(self) -> str:
@@ -54,9 +60,15 @@ class _FaissPool(CachePool):
         self,
         embed_model: str = EMBEDDING_MODEL,
         embed_device: str = embedding_device(),
+        index: str = None,
     ) -> FAISS:
         embeddings = EmbeddingsFunAdapter(embed_model)
         doc = Document(page_content="init", metadata={})
+        index = self.get_indexing(embeddings, index)
+        if index:
+            vector_store = FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT", index = index)
+        else:
+            vector_store = FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT")
         vector_store = FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT")
         ids = list(vector_store.docstore._dict.keys())
         vector_store.delete(ids)
@@ -70,6 +82,22 @@ class _FaissPool(CachePool):
         if cache := self.get(kb_name):
             self.pop(kb_name)
             logger.info(f"成功释放向量库：{kb_name}")
+    
+    def get_indexing(
+            self, 
+            embeddings: Embeddings, 
+            index: str = None
+        ) -> Any:
+        if index:
+            import faiss
+            indexing = getattr(SupportedIndexing, index.upper())
+            if SupportedIndexing.INDEXHNSWFLAT == indexing:
+                index = faiss.index_factory(len(embeddings[0]),"HNSW32,Flat")
+            elif SupportedIndexing.INDEXIVFPQ == indexing:
+                index = faiss.index_factory(len(embeddings[0]),"IVF4096,PQ16x8")
+            else:
+                index = None
+        return index
 
 
 class KBFaissPool(_FaissPool):
@@ -80,6 +108,7 @@ class KBFaissPool(_FaissPool):
             create: bool = True,
             embed_model: str = EMBEDDING_MODEL,
             embed_device: str = embedding_device(),
+            index: str = None,
     ) -> ThreadSafeFaiss:
         self.atomic.acquire()
         vector_name = vector_name or embed_model
@@ -94,12 +123,16 @@ class KBFaissPool(_FaissPool):
 
                 if os.path.isfile(os.path.join(vs_path, "index.faiss")):
                     embeddings = self.load_kb_embeddings(kb_name=kb_name, embed_device=embed_device, default_embed_model=embed_model)
-                    vector_store = FAISS.load_local(vs_path, embeddings, distance_strategy="METRIC_INNER_PRODUCT")
+                    index = self.get_indexing(embeddings, index)
+                    if index:
+                        vector_store = FAISS.load_local(vs_path, embeddings, distance_strategy="METRIC_INNER_PRODUCT", index = index)
+                    else:
+                        vector_store = FAISS.load_local(vs_path, embeddings, distance_strategy="METRIC_INNER_PRODUCT")
                 elif create:
                     # create an empty vector store
                     if not os.path.exists(vs_path):
                         os.makedirs(vs_path)
-                    vector_store = self.new_vector_store(embed_model=embed_model, embed_device=embed_device)
+                    vector_store = self.new_vector_store(embed_model=embed_model, embed_device=embed_device, index=index)
                     vector_store.save_local(vs_path)
                 else:
                     raise RuntimeError(f"knowledge base {kb_name} not exist.")
@@ -116,6 +149,7 @@ class MemoFaissPool(_FaissPool):
         kb_name: str,
         embed_model: str = EMBEDDING_MODEL,
         embed_device: str = embedding_device(),
+        index: str = None,
     ) -> ThreadSafeFaiss:
         self.atomic.acquire()
         cache = self.get(kb_name)
@@ -126,7 +160,7 @@ class MemoFaissPool(_FaissPool):
                 self.atomic.release()
                 logger.info(f"loading vector store in '{kb_name}' to memory.")
                 # create an empty vector store
-                vector_store = self.new_vector_store(embed_model=embed_model, embed_device=embed_device)
+                vector_store = self.new_vector_store(embed_model=embed_model, embed_device=embed_device, index=index)
                 item.obj = vector_store
                 item.finish_loading()
         else:

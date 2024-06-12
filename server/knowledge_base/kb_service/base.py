@@ -18,7 +18,7 @@ from server.db.repository.knowledge_file_repository import (
 )
 
 from configs import (kbs_config, VECTOR_SEARCH_TOP_K, SCORE_THRESHOLD,
-                     EMBEDDING_MODEL, KB_INFO)
+                     EMBEDDING_MODEL, KB_INFO, kbs_config)
 from server.knowledge_base.utils import (
     get_kb_path, get_doc_path, KnowledgeFile,
     list_kbs_from_folder, list_files_from_folder,
@@ -315,10 +315,10 @@ class KBServiceFactory:
                     embed_model: str = EMBEDDING_MODEL,
                     ) -> KBService:
         if isinstance(vector_store_type, str):
-            vector_store_type = getattr(SupportedVSType, vector_store_type.upper())
+            vector_store_type = getattr(SupportedVSType, vector_store_type.upper().split("-")[0])
         if SupportedVSType.FAISS == vector_store_type:
             from server.knowledge_base.kb_service.faiss_kb_service import FaissKBService
-            return FaissKBService(kb_name, embed_model=embed_model)
+            return FaissKBService(kb_name, embed_model=embed_model, index_method = kbs_config[vector_store_type])
         elif SupportedVSType.PG == vector_store_type:
             from server.knowledge_base.kb_service.pg_kb_service import PGKBService
             return PGKBService(kb_name, embed_model=embed_model)
