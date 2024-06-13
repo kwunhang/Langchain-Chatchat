@@ -1,6 +1,5 @@
 from langchain_community.vectorstores.faiss import FAISS, dependable_faiss_import
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -16,8 +15,7 @@ from typing import (
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.embeddings import Embeddings
 from langchain_community.vectorstores.utils import DistanceStrategy
-if TYPE_CHECKING:
-    from langchain_core.documents import Document
+from langchain_core.documents import Document
     
 VST = TypeVar("VST", bound="FAISS")
 
