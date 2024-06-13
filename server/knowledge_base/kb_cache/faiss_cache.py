@@ -1,8 +1,9 @@
-from configs import CACHED_VS_NUM, CACHED_MEMO_VS_NUM
+from configs import CACHED_VS_NUM, CACHED_MEMO_VS_NUM, logger
 from server.knowledge_base.kb_cache.base import *
 from server.knowledge_base.kb_service.base import EmbeddingsFunAdapter
 from server.utils import load_local_embeddings
 from server.knowledge_base.utils import get_vs_path
+from server.knowledge_base.kb_func.faiss_func import Custom_FAISS
 from langchain.vectorstores.faiss import FAISS
 from langchain.docstore.in_memory import InMemoryDocstore
 from langchain.schema import Document
@@ -62,14 +63,14 @@ class _FaissPool(CachePool):
         embed_device: str = embedding_device(),
         index: str = None,
     ) -> FAISS:
+        logger.info(f"new vector store")
         embeddings = EmbeddingsFunAdapter(embed_model)
         doc = Document(page_content="init", metadata={})
-        index = self.get_indexing(embeddings, index)
+        index = self.get_indexing([doc],embeddings, index)
         if index:
-            vector_store = FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT", index = index)
+            vector_store = Custom_FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT", index = index)
         else:
-            vector_store = FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT")
-        vector_store = FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT")
+            vector_store = Custom_FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT")
         ids = list(vector_store.docstore._dict.keys())
         vector_store.delete(ids)
         return vector_store
@@ -85,17 +86,25 @@ class _FaissPool(CachePool):
     
     def get_indexing(
             self, 
-            embeddings: Embeddings, 
+            documents: List[Document],
+            embedding: Embeddings, 
             index: str = None
         ) -> Any:
+        logger.info(f"get_indexing")
         if index:
             import faiss
             indexing = getattr(SupportedIndexing, index.upper())
+            logger.info(f"if index")
+            texts = [d.page_content for d in documents]
+            embeddings = embedding.embed_documents(texts[0])
             if SupportedIndexing.INDEXHNSWFLAT == indexing:
                 index = faiss.index_factory(len(embeddings[0]),"HNSW32,Flat")
+                logger.info(f"INDEXHNSWFLAT")
             elif SupportedIndexing.INDEXIVFPQ == indexing:
                 index = faiss.index_factory(len(embeddings[0]),"IVF4096,PQ16x8")
+                logger.info(f"INDEXIVFPQ")
             else:
+                logger.info(f"None")
                 index = None
         return index
 
@@ -123,9 +132,8 @@ class KBFaissPool(_FaissPool):
 
                 if os.path.isfile(os.path.join(vs_path, "index.faiss")):
                     embeddings = self.load_kb_embeddings(kb_name=kb_name, embed_device=embed_device, default_embed_model=embed_model)
-                    index = self.get_indexing(embeddings, index)
                     if index:
-                        vector_store = FAISS.load_local(vs_path, embeddings, distance_strategy="METRIC_INNER_PRODUCT", index = index)
+                        vector_store = FAISS.load_local(vs_path, embeddings, distance_strategy="METRIC_INNER_PRODUCT")
                     else:
                         vector_store = FAISS.load_local(vs_path, embeddings, distance_strategy="METRIC_INNER_PRODUCT")
                 elif create:

@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from configs import SCORE_THRESHOLD, EMBEDDING_MODEL
+from configs import SCORE_THRESHOLD, EMBEDDING_MODEL, logger
 from server.knowledge_base.kb_service.base import KBService, SupportedVSType, EmbeddingsFunAdapter
 from server.knowledge_base.kb_cache.faiss_cache import kb_faiss_pool, ThreadSafeFaiss
 from server.knowledge_base.utils import KnowledgeFile, get_kb_path, get_vs_path
@@ -34,6 +34,7 @@ class FaissKBService(KBService):
         return get_kb_path(self.kb_name)
 
     def load_vector_store(self) -> ThreadSafeFaiss:
+        logger.info(f"load_vector_store in faiss service")
         return kb_faiss_pool.load_vector_store(kb_name=self.kb_name,
                                                vector_name=self.vector_name,
                                                embed_model=self.embed_model,
