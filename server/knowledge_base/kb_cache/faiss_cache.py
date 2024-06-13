@@ -63,14 +63,14 @@ class _FaissPool(CachePool):
         embed_device: str = embedding_device(),
         index: str = None,
     ) -> FAISS:
-        logger.info(f"new vector store")
-        embeddings = EmbeddingsFunAdapter(embed_model)
+        # logger.info(f"new vector store")
+        embedding = EmbeddingsFunAdapter(embed_model)
         doc = Document(page_content="init", metadata={})
-        index = self.get_indexing([doc],embeddings, index)
+        index = self.get_indexing([doc],embedding, index)
         if index:
-            vector_store = Custom_FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT", index = index)
+            vector_store = Custom_FAISS.from_documents(documents = [doc], embedding = embedding, distance_strategy="METRIC_INNER_PRODUCT", index = index)
         else:
-            vector_store = Custom_FAISS.from_documents([doc], embeddings, distance_strategy="METRIC_INNER_PRODUCT")
+            vector_store = Custom_FAISS.from_documents(documents = [doc], embedding = embedding, distance_strategy="METRIC_INNER_PRODUCT")
         ids = list(vector_store.docstore._dict.keys())
         vector_store.delete(ids)
         return vector_store

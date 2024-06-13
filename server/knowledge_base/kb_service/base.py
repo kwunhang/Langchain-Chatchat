@@ -317,10 +317,8 @@ class KBServiceFactory:
         vector_type = vector_store_type
         if isinstance(vector_store_type, str):
             vector_store_type = getattr(SupportedVSType, vector_store_type.upper().split("-")[0])
-        logger.info("vector_store_type: " + vector_store_type + "\n")
         if SupportedVSType.FAISS == vector_store_type:
             from server.knowledge_base.kb_service.faiss_kb_service import FaissKBService
-            logger.info("FaissKBService and method:" + str(kbs_config[vector_type]['method'] or 'none'))
             return FaissKBService(kb_name, embed_model=embed_model, index_method = kbs_config[vector_type]['method'])
         elif SupportedVSType.PG == vector_store_type:
             from server.knowledge_base.kb_service.pg_kb_service import PGKBService

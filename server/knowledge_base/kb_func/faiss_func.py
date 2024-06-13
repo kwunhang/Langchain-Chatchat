@@ -21,17 +21,18 @@ VST = TypeVar("VST", bound="FAISS")
 
 
 class Custom_FAISS(FAISS):
+    @classmethod
     def from_documents(
-        cls: Type[VST],
+        self,
         documents: List[Document],
         embedding: Embeddings,
         **kwargs: Any,
-    ) -> VST:
+    ) -> FAISS:
         """Return VectorStore initialized from documents and embeddings."""
         texts = [d.page_content for d in documents]
         metadatas = [d.metadata for d in documents]
         embeddings = embedding.embed_documents(texts)
-        return cls.__from(
+        return self.__from(
             texts,
             embeddings,
             embedding,
@@ -39,6 +40,7 @@ class Custom_FAISS(FAISS):
             **kwargs,
         )
     
+    @classmethod
     def __from(
         cls,
         texts: Iterable[str],
@@ -48,6 +50,7 @@ class Custom_FAISS(FAISS):
         ids: Optional[List[str]] = None,
         normalize_L2: bool = False,
         distance_strategy: DistanceStrategy = DistanceStrategy.EUCLIDEAN_DISTANCE,
+        index: Any = None,
         **kwargs: Any,
     ) -> FAISS:
         faiss = dependable_faiss_import()
@@ -69,5 +72,5 @@ class Custom_FAISS(FAISS):
             distance_strategy=distance_strategy,
             **kwargs,
         )
-        vecstore.__add(texts, embeddings, metadatas=metadatas, ids=ids)
+        vecstore._FAISS__add(texts, embeddings, metadatas=metadatas, ids=ids)
         return vecstore
