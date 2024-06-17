@@ -5,7 +5,7 @@ xformers==0.0.23.post1
 transformers==4.37.2
 sentence_transformers==2.2.2
 langchain==0.0.354
-langchain-community==0.0.19
+langchain-community==0.0.16
 langchain-experimental==0.0.47
 pydantic==1.10.13
 fschat==0.2.35
@@ -18,7 +18,7 @@ starlette==0.35.0
 unstructured[all-docs] # ==0.11.8
 python-magic-bin; sys_platform == 'win32'
 SQLAlchemy==2.0.25
-faiss-cpu==1.7.4
+# faiss-cpu==1.7.4
 accelerate==0.24.1
 spacy==3.7.2
 PyMuPDF==1.23.16
@@ -39,10 +39,10 @@ transformers_stream_generator==0.0.4
 vllm==0.2.7; sys_platform == "linux"
 llama-index==0.9.35
 
-# jq==1.6.0
-# beautifulsoup4==4.12.2
-# pysrt==1.1.2
-# dashscope==1.13.6 # qwen
+jq==1.6.0
+beautifulsoup4==4.12.2
+pysrt==1.1.2
+dashscope==1.13.6 # qwen
 # volcengine==1.0.134 # fangzhou
 # uncomment libs if you want to use corresponding vector store
 # pymilvus==2.3.6
