@@ -6,7 +6,7 @@ import pandas as pd
 from server.knowledge_base.utils import get_file_path, LOADER_DICT
 from server.knowledge_base.kb_service.base import get_kb_details, get_kb_file_details
 from typing import Literal, Dict, Tuple
-from configs import (kbs_config,
+from configs import (kbs_config, milvus_config,
                      EMBEDDING_MODEL, DEFAULT_VS_TYPE,
                      CHUNK_SIZE, OVERLAP_SIZE, ZH_TITLE_ENHANCE)
 from server.utils import list_embed_models, list_online_embed_models
@@ -119,6 +119,23 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 index=embed_models.index(EMBEDDING_MODEL),
                 key="embed_model",
             )
+            
+            milvus_config_cols = st.columns(2)
+            index_types = list(milvus_config)
+            index_type = milvus_config_cols[0].selectbox(
+                "Index类型",
+                index_types,
+                index=index_types.index("HNSW"),
+                key="index_type",
+            )
+            
+            index_param = milvus_config_cols[1].text_input(
+                "index params",
+                placeholder="mulvus index params",
+                key="index_param",
+                value="""{"M": 8, "efConstruction": 64}"""
+                )
+                
 
             submit_create_kb = st.form_submit_button(
                 "新建",
@@ -136,6 +153,8 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     knowledge_base_name=kb_name,
                     vector_store_type=vs_type,
                     embed_model=embed_model,
+                    index_type=index_type,
+                    index_param=index_param,
                 )
                 st.toast(ret.get("msg", " "))
                 st.session_state["selected_kb_name"] = kb_name
