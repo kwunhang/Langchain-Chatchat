@@ -15,19 +15,12 @@ from server.knowledge_base.utils import KnowledgeFile
 
 class MilvusKBService(KBService):
     milvus: Milvus
-    index_type: str
-    index_param: str
 
     @staticmethod
     def get_collection(milvus_name):
         from pymilvus import Collection
         return Collection(milvus_name)
     
-    def __init__(self, knowledge_base_name: str, embed_model: str = ..., index_type: str = "", index_param: str=""):
-        self.index_type = index_type
-        self.index_param = index_param
-        super().__init__(knowledge_base_name, embed_model)
-
     def get_doc_by_ids(self, ids: List[str]) -> List[Document]:
         result = []
         if self.milvus.col:

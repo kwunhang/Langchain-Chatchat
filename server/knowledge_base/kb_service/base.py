@@ -55,10 +55,14 @@ class KBService(ABC):
     def __init__(self,
                  knowledge_base_name: str,
                  embed_model: str = EMBEDDING_MODEL,
+                 index_type: str = "",
+                 index_param: str = "",
                  ):
         self.kb_name = knowledge_base_name
         self.kb_info = KB_INFO.get(knowledge_base_name, f"关于{knowledge_base_name}的知识库")
         self.embed_model = embed_model
+        self.index_type = index_type
+        self.index_param = index_param
         self.kb_path = get_kb_path(self.kb_name)
         self.doc_path = get_doc_path(self.kb_name)
         self.do_init()
@@ -79,7 +83,7 @@ class KBService(ABC):
         if not os.path.exists(self.doc_path):
             os.makedirs(self.doc_path)
         self.do_create_kb()
-        status = add_kb_to_db(self.kb_name, self.kb_info, self.vs_type(), self.embed_model)
+        status = add_kb_to_db(self.kb_name, self.kb_info, self.vs_type(), self.embed_model, self.index_type, self.index_param)
         return status
 
     def clear_vs(self):
@@ -152,7 +156,7 @@ class KBService(ABC):
         更新知识库介绍
         """
         self.kb_info = kb_info
-        status = add_kb_to_db(self.kb_name, self.kb_info, self.vs_type(), self.embed_model)
+        status = add_kb_to_db(self.kb_name, self.kb_info, self.vs_type(), self.embed_model, self.index_type, self.index_param)
         return status
 
     def update_doc(self, kb_file: KnowledgeFile, docs: List[Document] = [], **kwargs):
@@ -346,10 +350,10 @@ class KBServiceFactory:
 
     @staticmethod
     def get_service_by_name(kb_name: str) -> KBService:
-        _, vs_type, embed_model = load_kb_from_db(kb_name)
+        _, vs_type, embed_model, index_type, index_param = load_kb_from_db(kb_name)
         if _ is None:  # kb not in db, just return None
             return None
-        return KBServiceFactory.get_service(kb_name, vs_type, embed_model)
+        return KBServiceFactory.get_service(kb_name, vs_type, embed_model, index_type, index_param)
 
     @staticmethod
     def get_default():
