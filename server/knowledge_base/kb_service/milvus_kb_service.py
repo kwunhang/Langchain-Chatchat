@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 from langchain.schema import Document
 from langchain.vectorstores.milvus import Milvus
 import os
+import json
 
 from configs import kbs_config
 from server.db.repository import list_file_num_docs_id_by_kb_name_and_file_name
@@ -23,9 +24,9 @@ class MilvusKBService(KBService):
         return Collection(milvus_name)
     
     def __init__(self, knowledge_base_name: str, embed_model: str = ..., index_type: str = "", index_param: str=""):
-        super().__init__(knowledge_base_name, embed_model)
         self.index_type = index_type
         self.index_param = index_param
+        super().__init__(knowledge_base_name, embed_model)
 
     def get_doc_by_ids(self, ids: List[str]) -> List[Document]:
         result = []
@@ -59,7 +60,7 @@ class MilvusKBService(KBService):
         default_index_params = kbs_config.get("milvus_default_kwargs")["index_params"]
         default_search_params = kbs_config.get("milvus_default_kwargs")["search_params"]
         default_index_params["index_type"] = self.index_type
-        default_index_params["params"] = self.index_param
+        default_index_params["params"] = json.loads(self.index_param)
         self.milvus = Milvus(embedding_function=EmbeddingsFunAdapter(self.embed_model),
                              collection_name=self.kb_name,
                              connection_args=kbs_config.get("milvus"),
