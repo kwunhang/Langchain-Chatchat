@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     st.set_page_config(
         "DSF Chatchat",
-        os.path.join("img", "ustlogo.png"),
+        os.path.join("img", "ustlogo.jpg"),
         initial_sidebar_state="expanded",
         menu_items={
             # 'Get Help': 'https://github.com/chatchat-space/Langchain-Chatchat',
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         st.image(
             os.path.join(
                 "img",
-                "dsf_lab_logo"
+                "dsf_lab_logo.jpg"
             ),
             use_column_width=True
         )
