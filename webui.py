@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     st.set_page_config(
         "DSF Chatchat",
-        os.path.join("img", "ustlogo.jpg"),
+        os.path.join("img", "HKUST_favicon.png"),
         initial_sidebar_state="expanded",
         menu_items={
             # 'Get Help': 'https://github.com/chatchat-space/Langchain-Chatchat',
