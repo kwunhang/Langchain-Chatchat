@@ -45,8 +45,8 @@ if __name__ == "__main__":
             use_column_width=True
         )
         st.text(f"""
-                <p align="left">DSF Chat Bot</p>
-                <p align="left">支持本地知识库问答t</p>
+                DSF Chat Bot
+                支持本地知识库问答t
                 """)
         st.caption(
             f"""<p align="right">当前版本：{VERSION}</p>""",
@@ -63,6 +63,16 @@ if __name__ == "__main__":
             # menu_icon="chat-quote",
             default_index=default_index,
         )
+        
+        # remove "view full screen" for lab logo image display
+        hide_img_fs = '''
+        <style>
+        button[title="View fullscreen"]{
+            visibility: hidden;}
+        </style>
+        '''
+
+        st.markdown(hide_img_fs, unsafe_allow_html=True)
 
     if selected_page in pages:
         pages[selected_page]["func"](api=api, is_lite=is_lite)
