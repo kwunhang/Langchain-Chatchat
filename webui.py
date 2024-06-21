@@ -46,7 +46,7 @@ if __name__ == "__main__":
         )
         st.text(f"""
                 DSF Chat Bot
-                支持本地知识库问答t
+                支持本地知识库问答
                 """)
         st.caption(
             f"""<p align="right">当前版本：{VERSION}</p>""",
