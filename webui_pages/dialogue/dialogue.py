@@ -7,7 +7,8 @@ import os
 import re
 import time
 from configs import (TEMPERATURE, HISTORY_LEN, PROMPT_TEMPLATES, LLM_MODELS,
-                     DEFAULT_KNOWLEDGE_BASE, DEFAULT_SEARCH_ENGINE, SUPPORT_AGENT_MODEL)
+                     DEFAULT_KNOWLEDGE_BASE, DEFAULT_SEARCH_ENGINE, SUPPORT_AGENT_MODEL,
+                     USE_RERANKER)
 from server.knowledge_base.utils import LOADER_DICT
 import uuid
 from typing import List, Dict
@@ -241,7 +242,14 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                     on_change=on_kb_change,
                     key="selected_kb",
                 )
-                kb_top_k = st.number_input("匹配知识条数：", 1, 20, VECTOR_SEARCH_TOP_K)
+                kb_top_k = st.number_input("匹配知识条数：", 1, 50, VECTOR_SEARCH_TOP_K)
+                reranking = st.toggle("开启Rerank", USE_RERANKER)
+                if reranking:
+                    kb_rerank_top_k = st.number_input(
+                        "Rerank返回知识条数：",
+                        1,
+                        kb_top_k if kb_top_k < 20 else 20,
+                        1)
 
                 ## Bge 模型会超过1
                 score_threshold = st.slider("知识匹配分数阈值：", 0.0, 2.0, float(SCORE_THRESHOLD), 0.01)
@@ -373,6 +381,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                 for d in api.knowledge_base_chat(prompt,
                                                  knowledge_base_name=selected_kb,
                                                  top_k=kb_top_k,
+                                                 rerank_top_k = kb_rerank_top_k if reranking else 0,
                                                  score_threshold=score_threshold,
                                                  history=history,
                                                  model=llm_model,
