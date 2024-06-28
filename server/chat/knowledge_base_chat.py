@@ -97,8 +97,9 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
             docs = reranker_model.compress_documents(documents=docs,
                                                      query=query)
             print("------------after rerank------------------")
-            print(docs[:rerank_top_k])
-        context = "\n".join([doc.page_content for doc in docs[:rerank_top_k]])
+            docs = docs[:rerank_top_k]
+            print(docs)
+        context = "\n".join([doc.page_content for doc in docs])
 
         if len(docs) == 0:  # 如果没有找到相关文档，使用empty模板
             prompt_template = get_prompt_template("knowledge_base_chat", "empty")
@@ -142,4 +143,4 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
                              ensure_ascii=False)
         await task
 
-    return EventSourceResponse(knowledge_base_chat_iterator(query, top_k, history,model_name,prompt_name))
+    return EventSourceResponse(knowledge_base_chat_iterator(query, top_k, rerank_top_k, history,model_name,prompt_name))
