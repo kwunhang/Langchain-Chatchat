@@ -5,7 +5,7 @@ from langchain.vectorstores.milvus import Milvus
 import os
 import json
 
-from configs import kbs_config
+from configs import kbs_config, kbs_kwargs_config
 from server.db.repository import list_file_num_docs_id_by_kb_name_and_file_name
 
 from server.knowledge_base.kb_service.base import KBService, SupportedVSType, EmbeddingsFunAdapter, \
@@ -50,8 +50,8 @@ class MilvusKBService(KBService):
         return SupportedVSType.MILVUS
 
     def _load_milvus(self):
-        default_index_params = kbs_config.get("milvus_default_kwargs")["index_params"]
-        default_search_params = kbs_config.get("milvus_default_kwargs")["search_params"]
+        default_index_params = kbs_kwargs_config.get("milvus_default_kwargs")["index_params"]
+        default_search_params = kbs_kwargs_config.get("milvus_default_kwargs")["search_params"]
         default_index_params["index_type"] = self.index_type
         default_index_params["params"] = json.loads(self.index_param)
         self.milvus = Milvus(embedding_function=EmbeddingsFunAdapter(self.embed_model),

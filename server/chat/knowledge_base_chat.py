@@ -24,6 +24,7 @@ from server.utils import embedding_device
 async def knowledge_base_chat(query: str = Body(..., description="用户输入", examples=["你好"]),
                               knowledge_base_name: str = Body(..., description="知识库名称", examples=["samples"]),
                               top_k: int = Body(VECTOR_SEARCH_TOP_K, description="匹配向量数"),
+                              rerank_top_k: int = Body(0, description="匹配向量rerank返还数"),
                               score_threshold: float = Body(
                                   SCORE_THRESHOLD,
                                   description="知识库匹配相关度阈值，取值范围在0-1之间，SCORE越小，相关度越高，取到1相当于不筛选，建议设置在0.5左右",
@@ -61,6 +62,7 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
     async def knowledge_base_chat_iterator(
             query: str,
             top_k: int,
+            rerank_top_k: int,
             history: Optional[List[History]],
             model_name: str = model_name,
             prompt_name: str = prompt_name,
@@ -83,7 +85,7 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
                                        score_threshold=score_threshold)
 
         # 加入reranker
-        if USE_RERANKER:
+        if rerank_top_k > 0:
             reranker_model_path = get_model_path(RERANKER_MODEL)
             reranker_model = LangchainReranker(top_n=top_k,
                                             device=embedding_device(),
@@ -95,6 +97,7 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
             docs = reranker_model.compress_documents(documents=docs,
                                                      query=query)
             print("------------after rerank------------------")
+            docs = docs[:rerank_top_k]
             print(docs)
         context = "\n".join([doc.page_content for doc in docs])
 
@@ -140,4 +143,4 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
                              ensure_ascii=False)
         await task
 
-    return EventSourceResponse(knowledge_base_chat_iterator(query, top_k, history,model_name,prompt_name))
+    return EventSourceResponse(knowledge_base_chat_iterator(query, top_k, rerank_top_k, history,model_name,prompt_name))
