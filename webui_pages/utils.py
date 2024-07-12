@@ -337,6 +337,7 @@ class ApiRequest:
             query: str,
             knowledge_base_name: str,
             top_k: int = VECTOR_SEARCH_TOP_K,
+            rerank_top_k: int = 0,
             score_threshold: float = SCORE_THRESHOLD,
             history: List[Dict] = [],
             stream: bool = True,
@@ -352,6 +353,7 @@ class ApiRequest:
             "query": query,
             "knowledge_base_name": knowledge_base_name,
             "top_k": top_k,
+            "rerank_top_k": rerank_top_k,
             "score_threshold": score_threshold,
             "history": history,
             "stream": stream,
@@ -506,6 +508,8 @@ class ApiRequest:
             knowledge_base_name: str,
             vector_store_type: str = DEFAULT_VS_TYPE,
             embed_model: str = EMBEDDING_MODEL,
+            index_type: str = None,
+            index_param: str = None,
     ):
         '''
         对应api.py/knowledge_base/create_knowledge_base接口
@@ -514,6 +518,8 @@ class ApiRequest:
             "knowledge_base_name": knowledge_base_name,
             "vector_store_type": vector_store_type,
             "embed_model": embed_model,
+            "index_type": index_type,
+            "index_param": index_param,
         }
 
         response = self.post(

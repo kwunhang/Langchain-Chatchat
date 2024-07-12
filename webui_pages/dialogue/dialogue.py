@@ -6,8 +6,9 @@ from datetime import datetime
 import os
 import re
 import time
-from configs import (TEMPERATURE, HISTORY_LEN, PROMPT_TEMPLATES, LLM_MODELS,
-                     DEFAULT_KNOWLEDGE_BASE, DEFAULT_SEARCH_ENGINE, SUPPORT_AGENT_MODEL)
+from configs import (TEMPERATURE, HISTORY_LEN, PROMPT_TEMPLATES, LLM_MODELS, logger,
+                     DEFAULT_KNOWLEDGE_BASE, DEFAULT_SEARCH_ENGINE, SUPPORT_AGENT_MODEL,
+                     USE_RERANKER)
 from server.knowledge_base.utils import LOADER_DICT
 import uuid
 from typing import List, Dict
@@ -18,6 +19,9 @@ chat_box = ChatBox(
         "chatchat_icon_blue_square_v2.png"
     )
 )
+
+def format_text(text: str) -> str:
+    return str(text).strip().replace("_", r"\_").replace("*", r"\*").replace("`", r"\`").replace("$", r"\$").replace("\n", r"<br>")
 
 
 def get_messages_history(history_len: int, content_in_expander: bool = False) -> List[Dict]:
@@ -241,7 +245,14 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                     on_change=on_kb_change,
                     key="selected_kb",
                 )
-                kb_top_k = st.number_input("匹配知识条数：", 1, 20, VECTOR_SEARCH_TOP_K)
+                kb_top_k = st.number_input("匹配知识条数：", 1, 50, VECTOR_SEARCH_TOP_K)
+                reranking = st.toggle("开启Rerank", USE_RERANKER)
+                if reranking:
+                    kb_rerank_top_k = st.number_input(
+                        "Rerank返回知识条数：",
+                        1,
+                        kb_top_k if kb_top_k < 20 else 20,
+                        1)
 
                 ## Bge 模型会超过1
                 score_threshold = st.slider("知识匹配分数阈值：", 0.0, 2.0, float(SCORE_THRESHOLD), 0.01)
@@ -298,7 +309,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
             st.rerun()
         else:
             history = get_messages_history(history_len)
-            chat_box.user_say(prompt)
+            chat_box.user_say(format_text(prompt))
             if dialogue_mode == "LLM 对话":
                 chat_box.ai_say("正在思考...")
                 text = ""
@@ -314,13 +325,13 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                         st.error(error_msg)
                         break
                     text += t.get("text", "")
-                    chat_box.update_msg(text)
+                    chat_box.update_msg(format_text(text))
                     message_id = t.get("message_id", "")
 
                 metadata = {
                     "message_id": message_id,
                 }
-                chat_box.update_msg(text, streaming=False, metadata=metadata)  # 更新最终的字符串，去除光标
+                chat_box.update_msg(format_text(text), streaming=False, metadata=metadata)  # 更新最终的字符串，去除光标
                 chat_box.show_feedback(**feedback_kwargs,
                                        key=message_id,
                                        on_submit=on_feedback,
@@ -355,15 +366,15 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                         st.error(error_msg)
                     if chunk := d.get("answer"):
                         text += chunk
-                        chat_box.update_msg(text, element_index=1)
+                        chat_box.update_msg(format_text(text), element_index=1)
                     if chunk := d.get("final_answer"):
                         ans += chunk
-                        chat_box.update_msg(ans, element_index=0)
+                        chat_box.update_msg(format_text(ans), element_index=0)
                     if chunk := d.get("tools"):
                         text += "\n\n".join(d.get("tools", []))
-                        chat_box.update_msg(text, element_index=1)
-                chat_box.update_msg(ans, element_index=0, streaming=False)
-                chat_box.update_msg(text, element_index=1, streaming=False)
+                        chat_box.update_msg(format_text(text), element_index=1)
+                chat_box.update_msg(format_text(ans), element_index=0, streaming=False)
+                chat_box.update_msg(format_text(text), element_index=1, streaming=False)
             elif dialogue_mode == "知识库问答":
                 chat_box.ai_say([
                     f"正在查询知识库 `{selected_kb}` ...",
@@ -373,6 +384,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                 for d in api.knowledge_base_chat(prompt,
                                                  knowledge_base_name=selected_kb,
                                                  top_k=kb_top_k,
+                                                 rerank_top_k = kb_rerank_top_k if reranking else 0,
                                                  score_threshold=score_threshold,
                                                  history=history,
                                                  model=llm_model,
@@ -384,7 +396,7 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                         text += chunk
                         chat_box.update_msg(text, element_index=0)
                 chat_box.update_msg(text, element_index=0, streaming=False)
-                chat_box.update_msg("\n\n".join(d.get("docs", [])), element_index=1, streaming=False)
+                chat_box.update_msg(format_text("\n".join(d.get("docs", []))), element_index=1, streaming=False)
             elif dialogue_mode == "文件对话":
                 if st.session_state["file_chat_id"] is None:
                     st.error("请先上传文件再进行对话")
@@ -406,9 +418,9 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                         st.error(error_msg)
                     elif chunk := d.get("answer"):
                         text += chunk
-                        chat_box.update_msg(text, element_index=0)
-                chat_box.update_msg(text, element_index=0, streaming=False)
-                chat_box.update_msg("\n\n".join(d.get("docs", [])), element_index=1, streaming=False)
+                        chat_box.update_msg(format_text(text), element_index=0)
+                chat_box.update_msg(format_text(text), element_index=0, streaming=False)
+                chat_box.update_msg(format_text("\n".join(d.get("docs", []))), element_index=1, streaming=False)
             elif dialogue_mode == "搜索引擎问答":
                 chat_box.ai_say([
                     f"正在执行 `{search_engine}` 搜索...",
@@ -427,9 +439,9 @@ def dialogue_page(api: ApiRequest, is_lite: bool = False):
                         st.error(error_msg)
                     elif chunk := d.get("answer"):
                         text += chunk
-                        chat_box.update_msg(text, element_index=0)
-                chat_box.update_msg(text, element_index=0, streaming=False)
-                chat_box.update_msg("\n\n".join(d.get("docs", [])), element_index=1, streaming=False)
+                        chat_box.update_msg(format_text(text), element_index=0)
+                chat_box.update_msg(format_text(text), element_index=0, streaming=False)
+                chat_box.update_msg(format_text("\n".join(d.get("docs", []))), element_index=1, streaming=False)
 
     if st.session_state.get("need_rerun"):
         st.session_state["need_rerun"] = False
