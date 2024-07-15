@@ -208,14 +208,39 @@ class KBSettings(BaseFileSettings):
                 "search_params": {
                     "metric_type": "L2"
                 },
-                "index_params": {
+                "index_params":{
                     "metric_type": "L2",
-                    "index_type": "HNSW"
+                    "index_type": "HNSW",
+                    "params": {"M": 8, "efConstruction": 64},
                 }
             },
             "chromadb": {}
         }
     """可选向量库类型及对应配置"""
+    
+    milvus_config: t.Dict[str, t.Any] = {
+            "milvus_kwargs": {
+                "search_params": {
+                    "metric_type": "L2"
+                },
+                "index_params":{
+                    "metric_type": "L2",
+                    "index_type": "HNSW",
+                    "params": {"M": 8, "efConstruction": 64},
+                }
+            },
+            "milvus_index_option" : {
+                "FLAT",
+                "IVF_FLAT",
+                "IVF_SQ8",
+                "IVF_PQ",
+                "HNSW",
+                "RHNSW_FLAG",
+                "RHNSW_PQ",
+                "ANNOY"
+            }
+        }
+    """Milvus向量库的設定及可選index"""
 
     text_splitter_dict: t.Dict[str, t.Dict[str, t.Any]] = {
             "ChineseRecursiveTextSplitter": {

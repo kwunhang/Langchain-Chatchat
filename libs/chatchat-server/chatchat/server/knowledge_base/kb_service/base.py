@@ -61,12 +61,16 @@ class KBService(ABC):
         knowledge_base_name: str,
         kb_info: str = None,
         embed_model: str = get_default_embedding(),
+        index_type: str = None,
+        index_param: str = None,
     ):
         self.kb_name = knowledge_base_name
         self.kb_info = kb_info or Settings.kb_settings.KB_INFO.get(
             knowledge_base_name, f"关于{knowledge_base_name}的知识库"
         )
         self.embed_model = embed_model
+        self.index_type = index_type
+        self.index_param = index_param
         self.kb_path = get_kb_path(self.kb_name)
         self.doc_path = get_doc_path(self.kb_name)
         self.do_init()
@@ -95,7 +99,7 @@ class KBService(ABC):
             os.makedirs(self.doc_path)
 
         status = add_kb_to_db(
-            self.kb_name, self.kb_info, self.vs_type(), self.embed_model
+            self.kb_name, self.kb_info, self.vs_type(), self.embed_model, self.index_type, self.index_param
         )
 
         if status:
@@ -177,7 +181,7 @@ class KBService(ABC):
         """
         self.kb_info = kb_info
         status = add_kb_to_db(
-            self.kb_name, self.kb_info, self.vs_type(), self.embed_model
+            self.kb_name, self.kb_info, self.vs_type(), self.embed_model, self.index_type, self.index_param
         )
         return status
 
@@ -363,6 +367,8 @@ class KBServiceFactory:
         vector_store_type: Union[str, SupportedVSType],
         embed_model: str = get_default_embedding(),
         kb_info: str = None,
+        index_type: str = None,
+        index_param: str = None,
     ) -> KBService:
         if isinstance(vector_store_type, str):
             vector_store_type = getattr(SupportedVSType, vector_store_type.upper())
@@ -370,6 +376,8 @@ class KBServiceFactory:
             "knowledge_base_name": kb_name,
             "embed_model": embed_model,
             "kb_info": kb_info,
+            "index_type": index_type,
+            "index_param": index_param,
         }
         if SupportedVSType.FAISS == vector_store_type:
             from chatchat.server.knowledge_base.kb_service.faiss_kb_service import (
@@ -432,10 +440,10 @@ class KBServiceFactory:
 
     @staticmethod
     def get_service_by_name(kb_name: str) -> KBService:
-        _, vs_type, embed_model = load_kb_from_db(kb_name)
+        _, vs_type, embed_model, index_type, index_param = load_kb_from_db(kb_name)
         if _ is None:  # kb not in db, just return None
             return None
-        return KBServiceFactory.get_service(kb_name, vs_type, embed_model)
+        return KBServiceFactory.get_service(kb_name, vs_type, embed_model, index_type, index_param)
 
     @staticmethod
     def get_default():

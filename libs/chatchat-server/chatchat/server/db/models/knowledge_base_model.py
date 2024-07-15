@@ -18,6 +18,8 @@ class KnowledgeBaseModel(Base):
     kb_info = Column(String(200), comment="知识库简介(用于Agent)")
     vs_type = Column(String(50), comment="向量库类型")
     embed_model = Column(String(50), comment="嵌入模型名称")
+    index_type = Column(String(50), comment='索引类型')
+    index_param = Column(String(100), comment='索引参数')
     file_count = Column(Integer, default=0, comment="文件数量")
     create_time = Column(DateTime, default=func.now(), comment="创建时间")
 
