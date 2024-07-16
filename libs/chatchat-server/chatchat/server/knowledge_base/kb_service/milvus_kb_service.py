@@ -61,7 +61,10 @@ class MilvusKBService(KBService):
 
     def _load_milvus(self):
         default_index_params = Settings.kb_settings.milvus_config.get("milvus_kwargs")["index_params"],
-        if self.index_type != None and self.index_param != None:
+        if self.index_type != None and self.index_param != None and self.index_type != "" and self.index_param != "":
+            default_index_params = {
+                "metric_type": "L2"
+            }
             default_index_params["index_type"] = self.index_type
             default_index_params["params"] = json.loads(self.index_param)
         self.milvus = Milvus(

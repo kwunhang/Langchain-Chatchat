@@ -134,12 +134,13 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 key="index_type",
             )
             
+
             index_param = col1[1].text_input(
                 "index params",
                 placeholder="mulvus index params",
                 key="index_param",
-                value=f"{index_types.index(default_index_params['params'])}"
-                )
+                value=f"""{json.dumps(default_index_params['params'])}"""
+            )
             
 
             submit_create_kb = st.form_submit_button(
