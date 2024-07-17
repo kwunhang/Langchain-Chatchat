@@ -107,23 +107,41 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 key="kb_info",
             )
 
-            col0, _ = st.columns([3, 1])
+            col0 = st.columns([1, 1])
 
             vs_types = list(Settings.kb_settings.kbs_config.keys())
-            vs_type = col0.selectbox(
+            vs_type = col0[0].selectbox(
                 "向量库类型",
                 vs_types,
                 index=vs_types.index(Settings.kb_settings.DEFAULT_VS_TYPE),
                 key="vs_type",
             )
-
-            col1, _ = st.columns([3, 1])
-            with col1:
+            with col0[1]:
                 embed_models = list(get_config_models(model_type="embed"))
                 index = 0
                 if get_default_embedding() in embed_models:
                     index = embed_models.index(get_default_embedding())
                 embed_model = st.selectbox("Embeddings模型", embed_models, index)
+
+            # index config
+            col1 = st.columns([1, 1])
+            index_types = list(Settings.kb_settings.milvus_config.get("milvus_index_option"))
+            default_index_params = Settings.kb_settings.milvus_config.get("milvus_kwargs")["index_params"]
+            index_type = col1[0].selectbox(
+                "Index类型",
+                index_types,
+                index=index_types.index(default_index_params["index_type"]),
+                key="index_type",
+            )
+            
+
+            index_param = col1[1].text_input(
+                "index params",
+                placeholder="mulvus index params",
+                key="index_param",
+                value=f"""{json.dumps(default_index_params['params'])}"""
+            )
+            
 
             submit_create_kb = st.form_submit_button(
                 "新建",
@@ -143,6 +161,8 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     knowledge_base_name=kb_name,
                     vector_store_type=vs_type,
                     embed_model=embed_model,
+                    index_type=index_type,
+                    index_param=index_param,
                 )
                 st.toast(ret.get("msg", " "))
                 st.session_state["selected_kb_name"] = kb_name

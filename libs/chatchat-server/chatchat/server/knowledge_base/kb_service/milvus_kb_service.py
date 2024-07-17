@@ -1,8 +1,10 @@
 import os
+import shutil
 from typing import Dict, List, Optional
 
 from langchain.schema import Document
 from langchain.vectorstores.milvus import Milvus
+import json
 
 from chatchat.settings import Settings
 from chatchat.server.db.repository import list_file_num_docs_id_by_kb_name_and_file_name
@@ -58,12 +60,19 @@ class MilvusKBService(KBService):
         return SupportedVSType.MILVUS
 
     def _load_milvus(self):
+        default_index_params = Settings.kb_settings.milvus_config.get("milvus_kwargs")["index_params"],
+        if self.index_type != None and self.index_param != None and self.index_type != "" and self.index_param != "":
+            default_index_params = {
+                "metric_type": "L2"
+            }
+            default_index_params["index_type"] = self.index_type
+            default_index_params["params"] = json.loads(self.index_param)
         self.milvus = Milvus(
             embedding_function=get_Embeddings(self.embed_model),
             collection_name=self.kb_name,
             connection_args=Settings.kb_settings.kbs_config.get("milvus"),
-            index_params=Settings.kb_settings.kbs_config.get("milvus_kwargs")["index_params"],
-            search_params=Settings.kb_settings.kbs_config.get("milvus_kwargs")["search_params"],
+            index_params=default_index_params,
+            search_params=Settings.kb_settings.milvus_config.get("milvus_kwargs")["search_params"],
             auto_id=True,
             )
 
@@ -74,6 +83,10 @@ class MilvusKBService(KBService):
         if self.milvus.col:
             self.milvus.col.release()
             self.milvus.col.drop()
+        try:
+            shutil.rmtree(self.kb_path)
+        except Exception:
+            ...
 
     def do_search(self, query: str, top_k: int, score_threshold: float):
         self._load_milvus()

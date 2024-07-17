@@ -23,6 +23,8 @@ def create_kb(
     vector_store_type: str = Body("faiss"),
     kb_info: str = Body("", description="知识库内容简介，用于Agent选择知识库。"),
     embed_model: str = Body(get_default_embedding()),
+    index_type: str = Body("", description="Milvus db index type"),
+    index_param: str = Body("", description="Milvus db customize index param"),
 ) -> BaseResponse:
     # Create selected knowledge base
     if not validate_kb_name(knowledge_base_name):
@@ -35,7 +37,7 @@ def create_kb(
         return BaseResponse(code=404, msg=f"已存在同名知识库 {knowledge_base_name}")
 
     kb = KBServiceFactory.get_service(
-        knowledge_base_name, vector_store_type, embed_model, kb_info=kb_info
+        knowledge_base_name, vector_store_type, embed_model, kb_info=kb_info, index_type=index_type, index_param=index_param
     )
     try:
         kb.create_kb()
