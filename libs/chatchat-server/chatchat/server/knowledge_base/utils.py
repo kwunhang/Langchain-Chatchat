@@ -18,6 +18,7 @@ from chatchat.server.file_rag.text_splitter import (
 )
 from chatchat.server.utils import run_in_process_pool, run_in_thread_pool
 from chatchat.utils import build_logger
+from chatchat.server.file_rag.pre_retreiveal import CorefReplacer
 
 
 logger = build_logger()
@@ -389,6 +390,12 @@ class KnowledgeFile:
     ):
         if self.splited_docs is None or refresh:
             docs = self.file2docs()
+            # TODO: temporary testing for coref replacer and need to update the testing code with better format
+            replacer = CorefReplacer()
+            for doc in docs:
+                if self.text_splitter_name != "MarkdownHeaderTextSplitter":
+                    doc.page_content = replacer.pronoun_replace(doc.page_content)
+            
             self.splited_docs = self.docs2texts(
                 docs=docs,
                 zh_title_enhance=zh_title_enhance,
