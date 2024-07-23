@@ -23,6 +23,8 @@ from chatchat.server.utils import MsgType, get_config_models, get_config_platfor
 from chatchat.webui_pages.dialogue.utils import process_files
 from chatchat.webui_pages.utils import *
 
+def format_text(text: str) -> str:
+    return str(text).strip().replace("_", r"\_").replace("*", r"\*").replace("`", r"\`").replace("$", r"\$").replace("\n", r"<br>")
 
 chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
 
@@ -371,9 +373,9 @@ def dialogue_page(
         is_vision_chat = upload_image and not selected_tools
 
         if is_vision_chat: # multimodal chat
-            chat_box.user_say([Image(get_image_file_url(upload_image), width=100), Markdown(prompt)])
+            chat_box.user_say([Image(get_image_file_url(upload_image), width=100), Markdown(format_text(prompt))])
         else:
-            chat_box.user_say(prompt)
+            chat_box.user_say(format_text(prompt))
         if files_upload:
             if files_upload["images"]:
                 st.markdown(
@@ -452,12 +454,12 @@ def dialogue_page(
                 elif d.status == AgentStatus.llm_new_token:
                     text += d.choices[0].delta.content or ""
                     chat_box.update_msg(
-                        text.replace("\n", "\n\n"), streaming=True, metadata=metadata
+                        text, streaming=True, metadata=metadata
                     )
                 elif d.status == AgentStatus.llm_end:
                     text += d.choices[0].delta.content or ""
                     chat_box.update_msg(
-                        text.replace("\n", "\n\n"), streaming=False, metadata=metadata
+                        text, streaming=False, metadata=metadata
                     )
                 # tool 的输出与 llm 输出重复了
                 # elif d.status == AgentStatus.tool_start:
@@ -481,7 +483,7 @@ def dialogue_page(
                 #         chat_box.update_msg(text, streaming=False, expanded=False, state="complete")
                 elif d.status == AgentStatus.agent_finish:
                     text = d.choices[0].delta.content or ""
-                    chat_box.update_msg(text.replace("\n", "\n\n"))
+                    chat_box.update_msg(text)
                 elif d.status is None:  # not agent chat
                     if getattr(d, "is_ref", False):
                         context = str(d.tool_output)
@@ -508,7 +510,7 @@ def dialogue_page(
 
                         chat_box.insert_msg(
                             Markdown(
-                                context,
+                                format_text(context),
                                 in_expander=True,
                                 state="complete",
                                 title="参考资料",
@@ -521,7 +523,7 @@ def dialogue_page(
                     else:
                         text += d.choices[0].delta.content or ""
                         chat_box.update_msg(
-                            text.replace("\n", "\n\n"), streaming=True, metadata=metadata
+                            text, streaming=True, metadata=metadata
                         )
             chat_box.update_msg(text, streaming=False, metadata=metadata)
         else:
